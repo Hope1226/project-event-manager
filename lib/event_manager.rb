@@ -17,6 +17,8 @@ end
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
+require 'time'
+
 
 puts "Event manager initialized!"
 
@@ -37,6 +39,44 @@ def clean_code(zip)
 =end
 
 end 
+
+def clean_phon_num(num)
+    num.gsub!(/[^\d]/, "")
+ 
+    if num.length == 10
+       num = num
+    elsif num.length == 11 and num[0] == "1"
+       num = num[1..10]
+    else
+       num = "Wrong Number!"
+    end 
+    num
+ end 
+
+ def correct_time_format(date)
+    arr = date.split(" ")
+    day = arr[0].split('/')
+    day[2] = "2008"
+    cleaned_day = day.push(arr[1]).join("-")
+    time = Time.strptime(cleaned_day, "%m-%d-%Y-%k:%M")
+ end
+
+
+def add_time(arr_hours)
+    arr_hours.max_by{|hour| arr_hours.count(hour)}
+end
+  
+def add_day(arr_days)
+     arr_days.max_by{|day| arr_days.count(day)}
+end
+
+reg_hours = []
+add_time = ""
+week_days = []
+add_day = ""
+call = {0=>"Sunday",1=>"Monday",2=>"Tuesday",3=>"Wednesday",4=>"Thursday",5=>"Friday",6=>"Saturday"}
+
+  
 
 def legistlators_by_zip(zip)
  civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
@@ -72,6 +112,10 @@ contents = CSV.open(
 contents.each do |row|
     name = row[:first_name]
     zip_code = row[:zipcode]
+    reg_date = correct_time_format(row[:regdate])
+    phone_num = clean_phon_num(row[:homephone])
+    add_time = add_time(reg_hours.push(reg_date.hour))
+    add_day = add_day(week_days.push(reg_date.wday))
     att_id = row[0]
     clean_zip = clean_code(zip_code)
     legislators = legistlators_by_zip(clean_zip)
@@ -80,6 +124,8 @@ contents.each do |row|
 
     
 end 
+
+puts "Users are most active at #{add_time}:00 hours on #{call[add_day]}s"
 
 
 
